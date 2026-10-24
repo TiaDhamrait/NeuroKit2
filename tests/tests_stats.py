@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 import neurokit2 as nk
 
@@ -21,6 +22,18 @@ def test_standardize():
 
     rez = np.sum(nk.standardize([1, 1, 5, 2, 1, 5, 1, 7], robust=True))
     assert np.allclose(rez, 14.8387, atol=0.001)
+
+
+@pytest.mark.parametrize("as_dataframe", [False, True])
+def test_standardize_robust_scales_each_column_independently(as_dataframe):
+    data = np.array([[1.0, 100.0], [2.0, 200.0], [3.0, 300.0], [np.nan, 400.0]])
+    expected = np.array([[-1.0, -1.5], [0.0, -0.5], [1.0, 0.5], [np.nan, 1.5]]) / 1.4826
+    if as_dataframe:
+        data = pd.DataFrame(data, columns=["low_scale", "high_scale"])
+        expected = pd.DataFrame(expected, columns=data.columns)
+        pd.testing.assert_frame_equal(nk.standardize(data, robust=True), expected)
+    else:
+        np.testing.assert_allclose(nk.standardize(data, robust=True), expected, equal_nan=True)
 
 
 def test_fit_loess():
